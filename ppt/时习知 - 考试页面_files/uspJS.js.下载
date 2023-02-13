@@ -1,0 +1,112 @@
+/**
+ *动态加载JS，CSS，图片等，给这一些静态资源，加上版本号
+ */
+var dynamicLoading = {
+	version:""+new Date().getFullYear()+(new Date().getMonth() + 1)+new Date().getDate()+new Date().getHours(),//动态刷新版本号
+	uspPortalServiceHost : 'http://w3.huawei.com/ihelp/usp/',	//仅作为内网访问情况下入口加载之用不涉及其他UI的跳转
+	uspPortalServiceHostOutNet : "http://app.huawei.com/ihelp/usp/",	//仅作为外网访问情况下入口加载之用不涉及其他UI的跳转
+	usplogicPath : 'usp/common/js/uspJSloadContent.js',
+	css : function(path) {
+		try{
+			if (!path || path.length === 0) {
+				throw new Error('argument "path" is required !');
+			}
+			var head = document.getElementsByTagName('head')[0];
+			var link = document.createElement('link');
+			link.href = path;
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			head.appendChild(link);
+		}catch(e){
+			console.log(e);
+		}
+	},
+	js : function(path) {
+		try{
+			if (!path || path.length === 0) {
+				throw new Error('argument "path" is required !');
+			}
+			var head = document.getElementsByTagName('head')[0];
+			var script = document.createElement('script');
+			script.src = path;
+			script.type = 'text/javascript';
+			head.appendChild(script);
+		}catch(e){
+			console.log(e);
+		}
+	},
+	analyUrl : function(p) {
+		try{
+			p += (p.indexOf('?') == -1) ? '?' : '&';
+			p += 'uspRandom=' + uspConfig.getCurrDateTime();
+			return p;
+		}catch(e){
+			console.log(e);
+		}
+	},
+	getDateFormat:function(fmt){//写一个获取时间的
+		try{
+			var dateObj = new Date();
+			var o = {
+					"M+" : dateObj.getMonth() + 1, // 月份
+					"d+" : dateObj.getDate(), // 日
+					"h+" : dateObj.getHours(), // 小时
+					"m+" : dateObj.getMinutes(), // 分
+					"s+" : dateObj.getSeconds(), // 秒
+					"q+" : Math.floor((dateObj.getMonth() + 3) / 3), // 季度
+					"S" : dateObj.getMilliseconds() // 毫秒
+			};
+			if (/(y+)/.test(fmt))
+				fmt = fmt.replace(RegExp.$1, (dateObj.getFullYear() + "").substr(4- RegExp.$1.length));
+			for (var k in o)
+				if (new RegExp("(" + k + ")").test(fmt))
+					fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1)? (o[k]): (("00" + o[k]).substr(("" + o[k]).length)));
+			return fmt;
+		}catch(e){
+			console.log(e);
+		}
+	},
+	
+	intranetExtranet:function(elementId){//刷内外网地址
+		try{
+			var wurl = window.location.href;
+			var uspJavascript = document.getElementById(elementId);
+			if(uspJavascript){
+				var lsURL = uspJavascript.getAttribute('src');
+//				var reg = /^https/i;//|| reg.test(lsURL)
+				var valnum = lsURL.indexOf("app.huawei.com");
+				if(valnum!=-1){
+					dynamicLoading.uspPortalServiceHost = dynamicLoading.uspPortalServiceHost.replace("w3.huawei.com","app.huawei.com");
+				}
+				if (window.location.protocol == "https:" ){
+					dynamicLoading.uspPortalServiceHost = dynamicLoading.uspPortalServiceHost.replace("http","https");
+				}
+			}	
+		}catch(e){}
+	},
+	uspJavascript:'uspJavascript',
+	uspJavascriptJalor:'uspJavascriptJalor',
+	uspJavascriptNginx:'uspJavascriptNginx',
+	init:function(){//初始化，更新版本号，并且加载JS
+		try{
+			//区分组件JS的内外网
+			var uJSIconspan = document.getElementById(dynamicLoading.uspJavascript);//一定有appid
+			var uJSIconspanJalor = document.getElementById(dynamicLoading.uspJavascriptJalor);//可能有，可能没有APPID
+			var uJSIconspanNginx = document.getElementById(dynamicLoading.uspJavascriptNginx);//可能有，可能没有APPID
+			if(uJSIconspanJalor){
+				dynamicLoading.intranetExtranet(dynamicLoading.uspJavascriptJalor);
+			}
+			if(uJSIconspanNginx ){
+				dynamicLoading.intranetExtranet(dynamicLoading.uspJavascriptNginx);
+			}
+			if(uJSIconspan){//加载当前的参数,
+				dynamicLoading.intranetExtranet(dynamicLoading.uspJavascript);
+			}
+			//动态加载JS
+			dynamicLoading.js(dynamicLoading.uspPortalServiceHost + dynamicLoading.usplogicPath+"?v="+dynamicLoading.version);
+		}catch(e){
+			console.log(e);
+		}
+	}
+}
+dynamicLoading.init();
